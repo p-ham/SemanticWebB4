@@ -9,11 +9,11 @@ const rl = readline.createInterface({
 });
 
 //entry point
-getVocabulary(getQuery)
+getVocabulary(computeIdf)
 
 //creates vocabulary from resource files
 function getVocabulary(callback) {
-    console.log("Creating Vocabulary, this could take up to 30min.")
+    console.log("Creating Vocabulary...")
     const vocabulary = new Map()
     fs.readdir(resources, (err, files) => {
         files.forEach(file => {
@@ -29,10 +29,7 @@ function getVocabulary(callback) {
                     }
                     // create file in word in vocabulary
                     if(!vocabulary.get(word).files.get(file)) vocabulary.get(word).files.set(file, 0)
-                    vocabulary.get(word).files.forEach(function(value, key, map){
-                        // add to counter // + 1/words.length = normalize, macht aber bei den sehr kurzen files keinen sinn.
-                        if(key == file) vocabulary.get(word).files.set(key, vocabulary.get(word).files.get(key) + 1)
-                    })
+                    vocabulary.get(word).files.set(file, vocabulary.get(word).files.get(file) + 1)
                 }
                 //call getQuery function with finished vocabulary
                 if(file == files[files.length-1]) {
@@ -44,19 +41,23 @@ function getVocabulary(callback) {
     })
 }
 
+function computeIdf(err, content, numdocs) {
+    // compute idf scores for each word in dictionary
+    content.forEach(function(value, word, map) {
+        content.get(word).idf = numdocs / value.files.size
+    })
+    getQuery(err, content)
+}
+
 //readline, in case of no input -> close program
-function getQuery(err, content, numdocs) {
+function getQuery(err, content) {
     rl.question('[31mGeben sie einen Search Query ein! (leere Eingabe zum Beenden)[39m\n', (query) => {
-        if(query.length > 0) getResults(query, err, content, numdocs)
+        if(query.length > 0) getResults(query, err, content)
         else rl.close()
     }) 
 }
 
-function getResults(query, err, content, numdocs) {
-    // compute idf scores for each word in dictionary
-    content.forEach(function(value, word, map) {
-        content.get(word).idf = numdocs / value.files.size
-    }) 
+function getResults(query, err, content) {
 
     const terms = query.split(" ")
     let results = new Array()
@@ -64,7 +65,7 @@ function getResults(query, err, content, numdocs) {
     for (i = 0; i < terms.length; i++) {
         let term = terms[i].replace(/[^a-zA-Z ]/g, "").toLowerCase()
         //term is in dictionary?
-        if(content.get(term).files) {
+        if(content.has(term)) {
             content.get(term).files.forEach(function(value, key, map) {
                 let inResults = false;
                 // check if file is already save for this term
@@ -89,6 +90,7 @@ function getResults(query, err, content, numdocs) {
     for(i = 0; i < results.length; i++) {
         let score = 0.0;
         results[i].terms.forEach(function(value, key, map) {
+            results[i].terms.set(key, Math.round(results[i].terms.get(key), 0))
             score += results[i].terms.get(key)
         }) 
         results[i].score = score
@@ -113,5 +115,5 @@ function getResults(query, err, content, numdocs) {
 
 
     //try another query
-    getQuery(err, content, numdocs)   
+    getQuery(err, content)   
 }
