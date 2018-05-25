@@ -14,6 +14,6 @@ folder homework_2 must contain a "/resources/" folder containing text files. [Ex
 ## Solr Wiki
 Solr has to run in a virtual machine on localhost:8983.  
 A Simple Wiki dump hast to be in the same folder as the index.js, called "simplewiki.json"  
-> cd solr_wiki
-> npm install
-> npm start
+> cd solr_wiki  
+> npm install  
+> npm start  
