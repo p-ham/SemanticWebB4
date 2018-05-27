@@ -1,7 +1,7 @@
 const fs = require('fs')
 const readline = require('readline')
 const stream = require('stream')
-const request = require('request')
+const request = require('sync-request')
 
 let documents = []
 
@@ -51,16 +51,15 @@ function accumData(postData) {
     documents.push(postData)
     if(documents.length == 10000){
         // send array of JSON objects to solr server
+        console.log('sending')
         sendData(documents)
         documents = []
-        console.log('sending')
     }
 }
 
 // sends data to solr server
 function sendData(postData){
     var clientServerOptions = {
-        uri: 'http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true&overwrite=true',
         body: JSON.stringify(postData),
         method: 'POST',
         headers: {
@@ -68,8 +67,10 @@ function sendData(postData){
         }
     }
     // on response from server, log response
-    request(clientServerOptions, function (error, response) {
-        console.log(response.body);
-        return;
-    });
+    let response = request('POST', 'http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true&overwrite=true', clientServerOptions);
+    if (response.statusCode !== 200) {
+      throw(response.body)
+    } else {
+      console.log('sent')
+    }
 }
